@@ -1,0 +1,32 @@
+log:
+  level: DEBUG
+
+accessLog: {}
+
+metrics:
+  prometheus:
+    entryPoint: metrics
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    swarmMode: true
+    exposedByDefault: false # Do not expose all Docker services, only the ones explicitly exposed
+
+  file:
+    filename: traefik-dynamic.yaml
+    watch: true
+
+## Static configuration
+entryPoints:
+  http:
+    address: ":80"
+
+  https:
+    address: ":443"
+
+  metrics:
+    address: ":8082"
+
+api:
+  dashboard: true

@@ -1,0 +1,46 @@
+version: '3.7'
+
+networks:
+  traefik-public:
+    external: true
+  private:
+    external: true
+
+services:
+  prometheus:
+    image: prom/prometheus:v2.20.1
+    volumes:
+      - promconfig:/etc/prometheus/
+      - promdata:/prometheus
+    configs:
+      - source: prometheus_config
+        target: /etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - traefik-public
+      - private
+    deploy:
+      placement:
+        constraints:
+          - node.role==manager
+      resources:
+        limits:
+          memory: 500M
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.prometheus.rule=Host(`prometheus.misbah-vm-1.uata.lokal`)
+        - traefik.http.routers.prometheus.entrypoints=http
+        - traefik.http.services.prometheus.loadbalancer.server.port=9090
+        - traefik.docker.network=traefik-public
+
+configs:
+  prometheus_config:
+    file: ./prometheus/configs/prometheus.yml
+
+volumes:
+  promconfig: {}
+  promdata: {}

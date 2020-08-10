@@ -1,0 +1,25 @@
+version: '3.7'
+
+networks:
+  traefik-public:
+    external: true
+
+services:
+  spring:
+    image: misbahulard/spring-example
+    networks:
+      - traefik-public
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "-", "http://localhost:8080/actuator/health"]
+    deploy:
+      replicas: 3
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.springinsecure.rule=Host(`misbah-vm-1.uata.lokal`)
+        - traefik.http.routers.springinsecure.entrypoints=http
+        - traefik.http.routers.springinsecure.middlewares=http-to-https@docker
+        - traefik.http.routers.springsecure.rule=Host(`misbah-vm-1.uata.lokal`)
+        - traefik.http.routers.springsecure.entrypoints=https
+        - traefik.http.routers.springsecure.tls=true
+        - traefik.http.services.spring.loadbalancer.server.port=8080
+        - traefik.docker.network=traefik-public

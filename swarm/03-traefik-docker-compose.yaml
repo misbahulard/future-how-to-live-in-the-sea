@@ -1,0 +1,50 @@
+version: '3.7'
+
+networks:
+  traefik-public:
+    external: true
+
+services:
+  traefik:
+    # The official v2.2 Traefik docker image
+    image: traefik:v2.2
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8082:8082"
+    networks:
+      - traefik-public
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+      #- ./traefik.yaml:/traefik.yaml
+      #- ./traefik-dynamic.yaml:/traefik-dynamic.yaml
+      - ./certs:/certs
+    configs:
+      - source: traefik_config
+        target: /traefik.yaml
+      - source: traefik_dynamic_config
+        target: /traefik-dynamic.yaml
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role == traefik
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=traefik-public
+        # create redirect to https rule
+        - traefik.http.middlewares.http-to-https.redirectscheme.scheme=https
+        - traefik.http.middlewares.http-to-https.redirectscheme.permanent=true
+        # create dashboard routing
+        - traefik.http.routers.dashboard.rule=Host(`traefik.misbah-vm-1.uata.lokal`)
+        - traefik.http.routers.dashboard.service=api@internal
+        - traefik.http.routers.dashboard.entrypoints=https
+        - traefik.http.routers.dashboard.tls=true
+        # Dummy service for Swarm port detection. The port can be any valid integer value.
+        - traefik.http.services.dummy-svc.loadbalancer.server.port=9999
+
+configs:
+  traefik_config:
+    file: ./traefik/traefik.yaml
+  traefik_dynamic_config:
+    file: ./traefik/traefik-dynamic.yaml
